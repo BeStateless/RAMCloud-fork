@@ -48,6 +48,7 @@ class CommandLineOptions {
         , externalStorageLocator()
         , pcapFilePath()
         , sessionTimeout(0)
+        , timeoutIntervals(0)
         , portTimeout(0)
         , clusterName()
         , configDir()
@@ -119,6 +120,15 @@ class CommandLineOptions {
     }
 
     /**
+     * Returns the number of intervals (attempts) the transport should use
+     * in an rpc session before assuming the connection has failed.
+     */
+    uint32_t getTimeoutIntervals() const
+    {
+        return timeoutIntervals;
+    }
+
+    /**
      * Returns the time (in ms) after which transports should assume that
      * the client for the lisning port is dead.
      */
@@ -168,7 +178,8 @@ class CommandLineOptions {
     string externalStorageLocator;  ///< See getExternalStorageLocator().
     string pcapFilePath;            ///< Packet log file, "" to disable.
     uint32_t sessionTimeout;        ///< See getSessionTimeout().
-    int32_t  portTimeout;           ///< See getSessionTimeout().
+    uint32_t timeoutIntervals;      ///< See getTimeoutIntervals().
+    int32_t  portTimeout;           ///< See getPortTimeout().
     string clusterName;             ///< See getClusterName().
     string configDir;               ///< See getConfigDir().
     int dpdkPort;                   ///< See getDpdkPort().

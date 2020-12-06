@@ -15,6 +15,7 @@
 #include <algorithm>
 
 #include "BasicTransport.h"
+#include "OptionParser.h"
 #include "Service.h"
 #include "TimeTrace.h"
 #include "WorkerManager.h"
@@ -109,6 +110,11 @@ BasicTransport::BasicTransport(Context* context, const ServiceLocator* locator,
     // intervals result in unnecessary retransmissions.
     timerInterval = Cycles::fromMicroseconds(2000);
     nextTimeoutCheck = Cycles::rdtsc() + timerInterval;
+
+    if ((context->options != NULL) && 
+        (context->options->getTimeoutIntervals() != 0)) {
+        timeoutIntervals = context->options->getTimeoutIntervals();
+    }
 
     LOG(NOTICE, "BasicTransport parameters: maxDataPerPacket %u, "
             "roundTripBytes %u, grantIncrement %u, pingIntervals %d, "

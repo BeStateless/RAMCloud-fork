@@ -231,6 +231,11 @@ OptionParser::setup(int argc, char* argv[])
              "How long transports should wait (ms) before declaring that a "
              "client connection for each rpc session is dead."
              "0 means use transport-specific default.")
+            ("timeoutIntervals",
+             ProgramOptions::value<uint32_t>(&options.timeoutIntervals)->
+                default_value(0),
+             "How many intervals (attempts) in an rpc session to try with the "
+             "client connection before declaring that session is dead.")
             ("dpdkPort",
              ProgramOptions::value<int>(&options.dpdkPort)->
                 default_value(-1),
