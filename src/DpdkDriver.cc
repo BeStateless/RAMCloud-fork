@@ -72,7 +72,7 @@ namespace {
 // Short-hand to obtain the starting address of a DPDK rte_mbuf based on its
 // payload address.
 #define payload_to_mbuf(payload) reinterpret_cast<struct rte_mbuf*>( \
-    payload - ETHER_HDR_LEN - RTE_PKTMBUF_HEADROOM - sizeof(struct rte_mbuf))
+    payload - ETHER_VLAN_HDR_LEN - RTE_PKTMBUF_HEADROOM - sizeof(struct rte_mbuf))
 
 constexpr uint16_t DpdkDriver::PRIORITY_TO_PCP[8];
 
@@ -352,8 +352,8 @@ DpdkDriver::receivePackets(uint32_t maxPackets,
     for (uint32_t i = 0; i < totalPkts; i++) {
         struct rte_mbuf* m = mPkts[i];
         char* data = rte_pktmbuf_mtod(m, char*);
-        char* payload = data + ETHER_HDR_LEN;
-        uint32_t length = rte_pktmbuf_pkt_len(m) - ETHER_HDR_LEN;
+        char* payload = data + ETHER_VLAN_HDR_LEN;
+        uint32_t length = rte_pktmbuf_pkt_len(m) - ETHER_VLAN_HDR_LEN;
         struct ether_hdr* ethHdr = rte_pktmbuf_mtod(m, struct ether_hdr*);
         assert(ethHdr->ether_type == rte_cpu_to_be_16(
                 NetUtil::EthPayloadType::RAMCLOUD));
