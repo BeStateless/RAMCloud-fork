@@ -248,6 +248,12 @@ class Crc32C {
         return ~result;
     }
 
+    /**
+     * Logs if we have SSE 4.2 support or not. This is indicated by the
+     * haveHardware variable.
+     */
+    static void logSse42Status();
+
   PRIVATE:
     /// Whether this machine has Intel's CRC32C instruction.
     static bool haveHardware;

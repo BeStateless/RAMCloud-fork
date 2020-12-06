@@ -40,6 +40,14 @@ bool Crc32C::haveHardware = haveSse42();
 bool Crc32C::haveHardware = false;
 #endif
 
+void Crc32C::logSse42Status() {
+	if (haveHardware) {
+		LOG(DEBUG, "Processor has SSE 4.2");
+	} else {
+		LOG(DEBUG, "Processor does not have SSE 4.2");
+	}
+}
+
 } // namespace RAMCloud
 
 namespace Crc32CSlicingBy8 {

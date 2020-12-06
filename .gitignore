@@ -13,6 +13,8 @@
 
 /install/
 /bindings/java/build/
+/bindings/python/*_pb2.py
+/bindings/python/*_pb2_grpc.py
 /deps/
 /logs/
 /docs/doxygen/

@@ -167,6 +167,7 @@ OptionParser::setup(int argc, char* argv[])
         vector<string> logLevels;
         string configFile(".ramcloud");
         bool debugOnSegfault = false;
+        bool shouldLogSse42Status = false;
 
         // Basic options supported on the command line of all apps
         OptionsDescription commonOptions("Common");
@@ -236,6 +237,10 @@ OptionParser::setup(int argc, char* argv[])
                 default_value(0),
              "How many intervals (attempts) in an rpc session to try with the "
              "client connection before declaring that session is dead.")
+            ("shouldLogSse42Status",
+             ProgramOptions::bool_switch(&shouldLogSse42Status),
+             "Whether or not we log the status of the processor having "
+             "SSE 4.2")
             ("dpdkPort",
              ProgramOptions::value<int>(&options.dpdkPort)->
                 default_value(-1),
@@ -339,6 +344,13 @@ OptionParser::setup(int argc, char* argv[])
             auto name = moduleLevel.substr(0, pos);
             auto level = moduleLevel.substr(pos + 1);
             Logger::get().setLogLevel(name, level);
+        }
+
+        if (shouldLogSse42Status) {
+            // When enabled, we want to log the status, i.e., if we have
+            // SSE 4.2 support or not. We purposely wait for logging to get
+            // setup first.
+            Crc32C::logSse42Status();
         }
 
         if (options.pcapFilePath != "")
