@@ -367,7 +367,7 @@ include bindings/python/Makefrag
 # test scripts, etc.) in the "private" subdirectory.
 include $(wildcard private/MakefragPrivate)
 
-clean: tests-clean docs-clean tags-clean install-clean java-clean
+clean: tests-clean docs-clean tags-clean install-clean
 	rm -rf $(OBJDIR)/.deps $(OBJDIR)/*
 
 check:
@@ -422,12 +422,6 @@ INSTALL_LIBS := \
     $(OBJDIR)/libramcloud.so \
     $(OBJDIR)/libramcloud.a \
     $(NULL)
-
-# Rebuild the Java bindings
-java: $(INSTALL_LIBS)
-	bindings/java/gradlew --project-dir bindings/java
-java-clean:
-	bindings/java/gradlew --project-dir bindings/java clean
 
 # The header files below are those that must be installed in order to
 # compile RAMCloud applications. Please try to keep this list as short
@@ -493,14 +487,13 @@ INSTALL_INCLUDES := \
 INSTALLED_BINS := $(patsubst $(OBJDIR)/%, $(INSTALL_DIR)/bin/%, $(INSTALL_BINS))
 INSTALLED_LIBS := $(patsubst $(OBJDIR)/%, $(INSTALL_DIR)/lib/%, $(INSTALL_LIBS))
 
-install: all java
+install: all
 	mkdir -p $(INSTALL_DIR)/bin
 	cp $(INSTALL_BINS) $(INSTALL_DIR)/bin
 	mkdir -p $(INSTALL_DIR)/include/ramcloud
 	cp $(INSTALL_INCLUDES) $(INSTALL_DIR)/include/ramcloud
 	mkdir -p $(INSTALL_DIR)/lib/ramcloud
 	cp $(INSTALL_LIBS) $(INSTALL_DIR)/lib/ramcloud
-	cp bindings/java/build/install/ramcloud/lib/* $(INSTALL_DIR)/lib/ramcloud
 
 install-clean:
 	rm -rf install
