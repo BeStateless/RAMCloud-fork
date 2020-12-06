@@ -59,13 +59,30 @@ class Transaction {
     void sync();
     bool commitAndSync();
 
+    /**
+     * This set of methods is used to issue a commit asynchronously.
+     * Sample code:
+     *     Transaction t;
+     *     ... add operations ...
+     *     t.commitAsync();
+     *     while (!t.commitReady())
+     *         t.poll();
+     *     if (!t.result())
+     *         std::cerr << "transaction failed" << std::endl;
+     */
+    void commitAsync();
+    bool commitReady();
+    bool syncReady();
+    bool result();
+    void poll();
+
     void read(uint64_t tableId, const void* key, uint16_t keyLength,
             Buffer* value, bool* objectExists = NULL);
 
-    void remove(uint64_t tableId, const void* key, uint16_t keyLength);
+    void remove(uint64_t tableId, const void* key, uint16_t keyLength, const RejectRules* rejectRules = NULL);
 
     void write(uint64_t tableId, const void* key, uint16_t keyLength,
-            const void* buf, uint32_t length);
+            const void* buf, uint32_t length, const RejectRules* rejectRules = NULL);
 
     /**
      * Encapsulates the state of a Transaction::read operation,

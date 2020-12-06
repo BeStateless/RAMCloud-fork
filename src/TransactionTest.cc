@@ -118,6 +118,35 @@ TEST_F(TransactionTest, commit_basic) {
     EXPECT_TRUE(transaction->commitStarted);
 }
 
+TEST_F(TransactionTest, commit_async_basic) {
+    ramcloud->write(tableId1, "0", 1, "abcdef", 6);
+
+    Buffer value;
+    transaction->read(tableId1, "0", 1, &value);
+    transaction->write(tableId1, "0", 1, "hello", 5);
+
+    EXPECT_FALSE(transaction->commitStarted);
+    EXPECT_EQ(ClientTransactionTask::INIT,
+              transaction->taskPtr.get()->state);
+
+    transaction->commitAsync();
+    while (!transaction->commitReady())
+        transaction->poll();
+
+    EXPECT_TRUE(transaction->result());
+
+    EXPECT_EQ(ClientTransactionTask::DONE,
+              transaction->taskPtr.get()->state);
+    EXPECT_TRUE(transaction->commitStarted);
+
+    // Check that commit does not wait for decision rpcs to return.
+    transaction->taskPtr.get()->state = ClientTransactionTask::DECISION;
+    EXPECT_TRUE(transaction->commit());
+    EXPECT_EQ(ClientTransactionTask::DECISION,
+              transaction->taskPtr.get()->state);
+    EXPECT_TRUE(transaction->commitStarted);
+}
+
 TEST_F(TransactionTest, commit_abort) {
     ramcloud->write(tableId1, "0", 1, "abcdef", 6);
 
@@ -343,6 +372,25 @@ TEST_F(TransactionTest, remove) {
     EXPECT_EQ(entry, task->findCacheEntry(key));
 }
 
+TEST_F(TransactionTest, remove_with_reject) {
+    ramcloud->write(tableId1, "0", 1, "abcdef", 6);
+    ramcloud->write(tableId1, "0", 1, "ghijkl", 6);
+
+    RejectRules rr;
+    rr.versionNeGiven = 1;
+    transaction->remove(tableId1, "0", 1, &rr);
+
+    EXPECT_FALSE(transaction->commitStarted);
+    EXPECT_EQ(ClientTransactionTask::INIT,
+              transaction->taskPtr.get()->state);
+
+    // The commit should fail because of the reject rules
+    EXPECT_FALSE(transaction->commit());
+    EXPECT_EQ(ClientTransactionTask::DONE,
+              transaction->taskPtr.get()->state);
+    EXPECT_TRUE(transaction->commitStarted);
+}
+
 TEST_F(TransactionTest, remove_afterCommit) {
     transaction->commitStarted = true;
     EXPECT_THROW(transaction->remove(1, "test", 4),
@@ -380,6 +428,31 @@ TEST_F(TransactionTest, write) {
     EXPECT_EQ("goodbye", string(str, dataLength));
 
     EXPECT_EQ(entry, task->findCacheEntry(key));
+}
+
+TEST_F(TransactionTest, write_with_reject) {
+    ramcloud->write(tableId1, "0", 1, "abcdef", 6);
+    ramcloud->write(tableId1, "0", 1, "ghijkl", 6);
+
+    RejectRules rr;
+    rr.versionNeGiven = 1;
+    transaction->write(tableId1, "0", 1, "mnopqrs", 6, &rr);
+
+    EXPECT_FALSE(transaction->commitStarted);
+    EXPECT_EQ(ClientTransactionTask::INIT,
+              transaction->taskPtr.get()->state);
+
+    // The commit should fail because of the reject rules
+    EXPECT_FALSE(transaction->commit());
+    EXPECT_EQ(ClientTransactionTask::DONE,
+              transaction->taskPtr.get()->state);
+    EXPECT_TRUE(transaction->commitStarted);
+
+    Buffer value;
+    ramcloud->read(tableId1, "0", 1, &value);
+    EXPECT_EQ("ghijkl", string(reinterpret_cast<const char*>(
+                                value.getRange(0, value.size())),
+                                value.size()));
 }
 
 TEST_F(TransactionTest, write_afterCommit) {

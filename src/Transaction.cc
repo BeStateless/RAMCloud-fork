@@ -104,6 +104,44 @@ Transaction::commitAndSync()
     return commit();
 }
 
+void
+Transaction::commitAsync()
+{
+    if (!commitStarted) {
+        commitStarted = true;
+        ramcloud->transactionManager->startTransactionTask(taskPtr);
+    }
+}
+
+bool
+Transaction::commitReady()
+{
+    return taskPtr->allDecisionsSent();
+}
+
+bool
+Transaction::syncReady()
+{
+    return taskPtr->isReady();
+}
+
+void
+Transaction::poll()
+{
+    ramcloud->transactionManager->poll();
+}
+
+bool
+Transaction::result()
+{
+    if (expect_false(taskPtr->getDecision() ==
+            WireFormat::TxDecision::UNDECIDED)) {
+        ClientException::throwException(HERE, STATUS_INTERNAL_ERROR);
+    }
+
+    return (taskPtr->getDecision() == WireFormat::TxDecision::COMMIT);
+}
+
 /**
  * Read the current contents of an object as part of this transaction.
  *
@@ -144,7 +182,7 @@ Transaction::read(uint64_t tableId, const void* key, uint16_t keyLength,
  *      Size in bytes of the key.
  */
 void
-Transaction::remove(uint64_t tableId, const void* key, uint16_t keyLength)
+Transaction::remove(uint64_t tableId, const void* key, uint16_t keyLength, const RejectRules* rejectRules)
 {
     if (expect_false(commitStarted)) {
         throw TxOpAfterCommit(HERE);
@@ -165,6 +203,9 @@ Transaction::remove(uint64_t tableId, const void* key, uint16_t keyLength)
     }
 
     entry->type = ClientTransactionTask::CacheEntry::REMOVE;
+    if (rejectRules != NULL) {
+        entry->rejectRules = *rejectRules;
+    }
 }
 
 /**
@@ -187,7 +228,7 @@ Transaction::remove(uint64_t tableId, const void* key, uint16_t keyLength)
  */
 void
 Transaction::write(uint64_t tableId, const void* key, uint16_t keyLength,
-        const void* buf, uint32_t length)
+        const void* buf, uint32_t length, const RejectRules* rejectRules)
 {
     if (expect_false(commitStarted)) {
         throw TxOpAfterCommit(HERE);
@@ -212,6 +253,9 @@ Transaction::write(uint64_t tableId, const void* key, uint16_t keyLength,
     }
 
     entry->type = ClientTransactionTask::CacheEntry::WRITE;
+    if (rejectRules != NULL) {
+        entry->rejectRules = *rejectRules;
+    }
 }
 
 /**

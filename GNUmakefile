@@ -431,7 +431,10 @@ INSTALL_INCLUDES := \
     src/BoostIntrusive.h \
     src/Buffer.h \
     src/ClientException.h \
+    src/ClientTransactionManager.h \
     src/CodeLocation.h \
+    src/Common.h \
+    src/Context.h \
     src/CoordinatorClient.h \
     src/CoordinatorRpcWrapper.h \
     src/Crc32C.h \
@@ -467,6 +470,7 @@ INSTALL_INCLUDES := \
     src/SpinLock.h \
     src/Status.h \
     src/TestLog.h \
+    src/Transaction.h \
     src/Transport.h \
     src/Tub.h \
     src/WireFormat.h \
