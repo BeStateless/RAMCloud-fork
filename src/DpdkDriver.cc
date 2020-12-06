@@ -90,6 +90,7 @@ DpdkDriver::DpdkDriver()
     , loopbackRing(NULL)
     , hasHardwareFilter(true)
     , bandwidthMbps(10000)
+    , vlanTag(0)
     , fileLogger(NOTICE, "DPDK: ")
 {
     localMac.construct("01:23:45:67:89:ab");
@@ -114,7 +115,11 @@ DpdkDriver::DpdkDriver()
  *      Selects which physical port to use for communication.
  */
 
-DpdkDriver::DpdkDriver(Context* context, int port)
+DpdkDriver::DpdkDriver(Context* context,
+                       int port,
+                       std::string args,
+                       bool skipInit,
+                       uint16_t tag)
     : Driver(context)
     , packetBufsUtilized(0)
     , locatorString()
@@ -124,12 +129,19 @@ DpdkDriver::DpdkDriver(Context* context, int port)
     , loopbackRing(NULL)
     , hasHardwareFilter(true)             // Cleared later if not applicable
     , bandwidthMbps(10000)                // Default bandwidth = 10 gbs
+    , vlanTag(tag)
     , fileLogger(NOTICE, "DPDK: ")
 {
     struct ether_addr mac;
     uint8_t numPorts;
     struct rte_eth_conf portConf;
     int ret;
+
+    if (vlanTag >= 4095) {
+        throw DriverException(HERE,
+                              "Bad vlan tag, expected vlanTag < 4095, got %i",
+                              static_cast<int>(vlanTag));
+    }
 
     portId = downCast<uint8_t>(port);
 
@@ -139,34 +151,43 @@ DpdkDriver::DpdkDriver(Context* context, int port)
     // This is a bug in DPDK as of 9/2016; if the bug gets fixed, then
     // the --file-prefix argument can be removed.
     LOG(NOTICE, "Using DPDK version %s", rte_version());
-    char nameBuffer[1000];
-    if (gethostname(nameBuffer, sizeof(nameBuffer)) != 0) {
-        throw DriverException(HERE, format("gethostname failed: %s",
-                strerror(errno)));
-    }
-    nameBuffer[sizeof(nameBuffer)-1] = 0;   // Needed if name was too long.
-    const char *argv[] = {"rc", "--file-prefix", nameBuffer, "-c", "1",
-            "-n", "1", NULL};
-    int argc = static_cast<int>(sizeof(argv) / sizeof(argv[0])) - 1;
+    if (!skipInit)
+    {
+        auto dpdkInit = [&](int argc, char** argv) {
+            for (int i = 0; i < argc; ++i)
+                LOG(NOTICE, "DPDK command-line %i = %s", i, argv[i]);
+            rte_openlog_stream(fileLogger.getFile());
+            ret = rte_eal_init(argc, argv);
+            if (ret < 0) {
+                throw DriverException(HERE, "rte_eal_init failed");
+            }
+        };
 
-    rte_openlog_stream(fileLogger.getFile());
-    ret = rte_eal_init(argc, const_cast<char**>(argv));
-    if (ret < 0) {
-        throw DriverException(HERE, "rte_eal_init failed");
-    }
-
-    // create an memory pool for accommodating packet buffers
-    mbufPool = rte_mempool_create("mbuf_pool", NB_MBUF,
-            MBUF_SIZE, 32,
-            sizeof32(struct rte_pktmbuf_pool_private),
-            rte_pktmbuf_pool_init, NULL,
-            rte_pktmbuf_init, NULL,
-            rte_socket_id(), 0);
-
-    if (!mbufPool) {
-        throw DriverException(HERE, format(
-                "Failed to allocate memory for packet buffers: %s",
-                rte_strerror(rte_errno)));
+        if (args.empty()) {
+            // Initialize the DPDK environment with some default parameters.
+            // --file-prefix is needed to avoid false lock conflicts if servers
+            // run on different nodes, but with a shared NFS home directory.
+            // This is a bug in DPDK as of 9/2016; if the bug gets fixed, then
+            // the --file-prefix argument can be removed.
+            char nameBuffer[1000];
+            if (gethostname(nameBuffer, sizeof(nameBuffer)) != 0) {
+                throw DriverException(HERE, format("gethostname failed: %s",
+                        strerror(errno)));
+            }
+            nameBuffer[sizeof(nameBuffer)-1] = 0;   // Needed if name was too long.
+            const char *argv[] = {"rc", "--file-prefix", nameBuffer, "-c", "1",
+                    "-n", "1", NULL};
+            int argc = static_cast<int>(sizeof(argv) / sizeof(argv[0])) - 1;
+            dpdkInit(argc, const_cast<char**>(argv));
+        } else {
+            std::replace(args.begin(), args.end(), ' ', '\0');
+            int argc = static_cast<int>(std::count(args.begin(), args.end(), '\0') + 1);
+            char* cstr = const_cast<char*>(args.c_str());
+            char* argv[argc];
+            for (int i = 0, pos = 0; i < argc; ++i, pos = args.find_first_of('\0', pos) + 1)
+                argv[i] = cstr + pos;
+            dpdkInit(argc, argv);
+        }
     }
 
     // ensure that DPDK was able to detect a compatible and available NIC
@@ -205,10 +226,29 @@ DpdkDriver::DpdkDriver(Context* context, int port)
           }
     }
 
+    int dpdk_socket = rte_eth_dev_socket_id(portId);
+    if (dpdk_socket < 0) {
+        throw DriverException(HERE, format("Unable to get socket for ethernet device."));
+    }
+
+    // create an memory pool for accommodating packet buffers
+    mbufPool = rte_mempool_create("mbuf_pool", NB_MBUF,
+            MBUF_SIZE, 32,
+            sizeof32(struct rte_pktmbuf_pool_private),
+            rte_pktmbuf_pool_init, NULL,
+            rte_pktmbuf_init, NULL,
+            dpdk_socket, 0);
+
+    if (!mbufPool) {
+        throw DriverException(HERE, format(
+                "Failed to allocate memory for packet buffers: %s",
+                rte_strerror(rte_errno)));
+    }
+
     // setup and initialize the receive and transmit NIC queues,
     // and activate the port.
-    rte_eth_rx_queue_setup(portId, 0, NDESC, 0, NULL, mbufPool);
-    rte_eth_tx_queue_setup(portId, 0, NDESC, 0, NULL);
+    rte_eth_rx_queue_setup(portId, 0, NDESC, dpdk_socket, NULL, mbufPool);
+    rte_eth_tx_queue_setup(portId, 0, NDESC, dpdk_socket, NULL);
 
     // set the MTU that the NIC port should support
     ret = rte_eth_dev_set_mtu(portId, MAX_PAYLOAD_SIZE);
@@ -444,7 +484,7 @@ DpdkDriver::sendPacket(const Address* addr,
     // Fill out the PCP field and the Ethernet frame type of the encapsulated
     // frame (DEI and VLAN ID are not relevant and trivially set to 0).
     struct vlan_hdr* vlanHdr = reinterpret_cast<struct vlan_hdr*>(p);
-    vlanHdr->vlan_tci = rte_cpu_to_be_16(PRIORITY_TO_PCP[priority]);
+    vlanHdr->vlan_tci = rte_cpu_to_be_16(PRIORITY_TO_PCP[priority] | vlanTag);
     vlanHdr->eth_proto = rte_cpu_to_be_16(NetUtil::EthPayloadType::RAMCLOUD);
     p += VLAN_TAG_LEN;
 

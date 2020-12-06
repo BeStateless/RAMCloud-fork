@@ -52,6 +52,9 @@ class CommandLineOptions {
         , clusterName()
         , configDir()
         , dpdkPort(0)
+        , dpdkArgs("")
+        , dpdkSkipInit(false)
+        , dpdkVlanTag(0)
     {
     }
 
@@ -133,6 +136,33 @@ class CommandLineOptions {
         return dpdkPort;
     }
 
+    /**
+     * Returns the arguments to give to rte_eal_init to initialize DPDK. If
+     * blank, one will be generated.
+     */
+    std::string getDpdkArgs() const
+    {
+        return dpdkArgs;
+    }
+
+    /**
+     * Returns whether or not rte_eal_init should be skipped when initializing
+     * DPDK. This can be done because DPDK has already been initialized by an
+     * application instantiating a RAMCloud::RAMCloud.
+     */
+    bool getDpdkSkipInit() const
+    {
+        return dpdkSkipInit;
+    }
+
+    /**
+     * Gets the VLAN tag that should be used in packets outgoing from RAMCloud.
+     */
+    uint16_t getDpdkVlanTag() const
+    {
+        return dpdkVlanTag;
+    }
+
     string coordinatorLocator;      ///< See getCoordinatorLocator().
     string localLocator;            ///< See getLocalLocator().
     string externalStorageLocator;  ///< See getExternalStorageLocator().
@@ -142,6 +172,9 @@ class CommandLineOptions {
     string clusterName;             ///< See getClusterName().
     string configDir;               ///< See getConfigDir().
     int dpdkPort;                   ///< See getDpdkPort().
+    std::string dpdkArgs;           ///< See getDpdkArgs().
+    bool dpdkSkipInit;              ///< See getDpdkSkipInit().
+    uint16_t dpdkVlanTag;           ///< See getDpdkVlanTag().
 };
 
 /**

@@ -216,7 +216,11 @@ TransportManager::TransportManager(Context* context)
     if (context->options != NULL) {
         int dpdkPort = context->options->getDpdkPort();
         if (dpdkPort >= 0) {
-            dpdkDriver = new DpdkDriver(context, dpdkPort);
+            dpdkDriver = new DpdkDriver(context,
+                                        dpdkPort,
+                                        context->options->getDpdkArgs(),
+                                        context->options->getDpdkSkipInit(),
+                                        context->options->getDpdkVlanTag());
             basicDpdkTransportFactory.setDpdkDriver(dpdkDriver);
             homaDpdkTransportFactory.setDpdkDriver(dpdkDriver);
         }

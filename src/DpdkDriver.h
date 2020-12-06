@@ -57,7 +57,11 @@ class DpdkDriver : public Driver
 #if TESTING
     explicit DpdkDriver();
 #endif
-    explicit DpdkDriver(Context* context, int port = 0);
+    explicit DpdkDriver(Context* context,
+                        int port = 0,
+                        std::string args = "",
+                        bool skipInit = false,
+                        uint16_t tag = 0);
     virtual ~DpdkDriver();
     virtual int getHighestPacketPriority();
     virtual uint32_t getMaxPacketSize();
@@ -134,6 +138,9 @@ class DpdkDriver : public Driver
 
     /// Effective network bandwidth, in Mbits/second.
     uint32_t bandwidthMbps;
+
+    /// The VLAN tag to put into outgoing packets.
+    uint16_t vlanTag;
 
     /// Used to redirect log entries from the DPDK log into the RAMCloud log.
     FileLogger fileLogger;

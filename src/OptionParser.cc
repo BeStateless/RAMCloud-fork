@@ -236,6 +236,21 @@ OptionParser::setup(int argc, char* argv[])
                 default_value(-1),
              "Selects the Ethernet port that the DPDK driver should use, "
              "or -1 if DPDK should not be enabled.")
+            ("dpdkArgs",
+             ProgramOptions::value<std::string>(&options.dpdkArgs)->
+                default_value(""),
+             "The arguments to give to rte_eal_init to initialize DPDK. If"
+             " empty then the arguments will be generated.")
+            ("dpdkSkipInit",
+             ProgramOptions::value<bool>(&options.dpdkSkipInit)->
+                default_value(false),
+             "Whether or not to skip rte_eal_init because it has already been"
+             " called. Default is false, which means rte_eal_init will be"
+             " called.")
+            ("dpdkVlanTag",
+             ProgramOptions::value<uint16_t>(&options.dpdkVlanTag)->
+                default_value(0),
+             "The VLAN tag to include in outgoing DPDK packets.")
             ("portTimeout",
              ProgramOptions::value<int32_t>(&options.portTimeout)->
                 default_value(-1), // Overriding to the initial value.
