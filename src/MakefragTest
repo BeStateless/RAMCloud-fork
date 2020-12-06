@@ -267,14 +267,18 @@ ftest: $(OBJDIR)/test
 zooTest: $(OBJDIR)/zooTest
 	$(OBJDIR)/zooTest
 
+# Directory for installation: various subdirectories such as include and
+# bin will be created by "make install".
+INSTALL_DIR ?= install
+
 # The following target tries to compile a simple RAMCloud client app using
 # only installed files, in order to ensure that "make install" has pulled
 # together all the information needed by client apps. Note: this target
 # does *not* use the normal compilation flags, since we only want installed
 # info to be available.
 testInstall: install
-	$(CXX) --std=$(CXX_STANDARD) -g -DNDEBUG -Iinstall/include -I. \
-	        src/TestClient.cc -o $(OBJDIR)/TestClient -Linstall/lib/ramcloud/ \
+	$(CXX) --std=$(CXX_STANDARD) -g -DTESTING=1 -fno-builtin -I$(INSTALL_DIR)/include -I. \
+	        src/TestClient.cc -o $(OBJDIR)/TestClient -L$(INSTALL_DIR)/lib/ramcloud/ \
 	        -lramcloud -Wl,-rpath=install/bin $(TEST_INSTALL_FLAGS)
 
 TESTS_ONLY_OBJFILES := $(TESTS_SRCFILES)
