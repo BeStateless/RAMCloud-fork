@@ -18,7 +18,7 @@
 
 """
 
-from __future__ import with_statement
+
 
 import unittest
 import random
@@ -61,7 +61,7 @@ class TestBackoffRetry(unittest.TestCase):
     def sleep_func(self, wait_time_iter):
         def sf(time):
             try:
-                expected = wait_time_iter.next()
+                expected = next(wait_time_iter)
             except StopIteration:
                 self.fail('sleep func got StopIteration')
             self.assertEqual(time, expected)
@@ -154,22 +154,22 @@ class TestBackoffRetry(unittest.TestCase):
 class TestExponentialBackoff(unittest.TestCase):
     def test_normal(self):
         wti = retries.ExponentialBackoff(0.3, 6.8, 90.1)._wait_time_iter
-        self.assertAlmostEqual(wti.next(), 0.3)
-        self.assertAlmostEqual(wti.next(), 0.3 * 6.8)
-        self.assertAlmostEqual(wti.next(), 0.3 * 6.8 ** 2)
-        self.assertAlmostEqual(wti.next(), 90.1)
-        self.assertRaises(StopIteration, wti.next)
+        self.assertAlmostEqual(next(wti), 0.3)
+        self.assertAlmostEqual(next(wti), 0.3 * 6.8)
+        self.assertAlmostEqual(next(wti), 0.3 * 6.8 ** 2)
+        self.assertAlmostEqual(next(wti), 90.1)
+        self.assertRaises(StopIteration, wti.__next__)
 
     def test_low_limit(self):
         wti = retries.ExponentialBackoff(0.3, 6.8, 0.0)._wait_time_iter
-        self.assertAlmostEqual(wti.next(), 0.0)
-        self.assertRaises(StopIteration, wti.next)
+        self.assertAlmostEqual(next(wti), 0.0)
+        self.assertRaises(StopIteration, wti.__next__)
 
     def test_high_scale(self):
         wti = retries.ExponentialBackoff(2.0, 6.8, 3.0)._wait_time_iter
-        self.assertAlmostEqual(wti.next(), 2.0)
-        self.assertAlmostEqual(wti.next(), 3.0)
-        self.assertRaises(StopIteration, wti.next)
+        self.assertAlmostEqual(next(wti), 2.0)
+        self.assertAlmostEqual(next(wti), 3.0)
+        self.assertRaises(StopIteration, wti.__next__)
 
 class TestFuzzyExponentialBackoff(unittest.TestCase):
     def setUp(self):
@@ -180,24 +180,24 @@ class TestFuzzyExponentialBackoff(unittest.TestCase):
     def test_normal(self):
         wti = retries.FuzzyExponentialBackoff(0.3, 6.8, 8.5,
                                               90.1)._wait_time_iter
-        self.assertAlmostEqual(wti.next(), 0.3)
-        self.assertAlmostEqual(wti.next(), 0.3 * self.rand[0])
-        self.assertAlmostEqual(wti.next(), 0.3 * self.rand[0] * self.rand[1])
-        self.assertAlmostEqual(wti.next(), 90.1)
-        self.assertRaises(StopIteration, wti.next)
+        self.assertAlmostEqual(next(wti), 0.3)
+        self.assertAlmostEqual(next(wti), 0.3 * self.rand[0])
+        self.assertAlmostEqual(next(wti), 0.3 * self.rand[0] * self.rand[1])
+        self.assertAlmostEqual(next(wti), 90.1)
+        self.assertRaises(StopIteration, wti.__next__)
 
     def test_low_limit(self):
         wti = retries.FuzzyExponentialBackoff(0.3, 6.8, 8.5,
                                               0.0)._wait_time_iter
-        self.assertAlmostEqual(wti.next(), 0.0)
-        self.assertRaises(StopIteration, wti.next)
+        self.assertAlmostEqual(next(wti), 0.0)
+        self.assertRaises(StopIteration, wti.__next__)
 
     def test_high_scale(self):
         wti = retries.FuzzyExponentialBackoff(2.0, 6.8, 8.5,
                                               3.0)._wait_time_iter
-        self.assertAlmostEqual(wti.next(), 2.0)
-        self.assertAlmostEqual(wti.next(), 3.0)
-        self.assertRaises(StopIteration, wti.next)
+        self.assertAlmostEqual(next(wti), 2.0)
+        self.assertAlmostEqual(next(wti), 3.0)
+        self.assertRaises(StopIteration, wti.__next__)
 
 class TestRandomBackoff(unittest.TestCase):
     def setUp(self):
@@ -208,7 +208,7 @@ class TestRandomBackoff(unittest.TestCase):
     def test_normal(self):
         wti = retries.RandomBackoff(6.8, 8.5)._wait_time_iter
         for r in self.rand:
-            self.assertAlmostEqual(wti.next(), r)
+            self.assertAlmostEqual(next(wti), r)
 
 if __name__ == '__main__':
     unittest.main()

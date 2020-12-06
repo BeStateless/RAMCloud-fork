@@ -71,7 +71,7 @@ def load_so():
         raise not_found
     try:
         so = ctypes.cdll.LoadLibrary(path)
-    except OSError, e:
+    except OSError as e:
         if 'No such file or directory' in str(e):
             raise not_found
         else:
@@ -104,7 +104,7 @@ def load_so():
     # argument types aliased to their names for sanity
     # alphabetical order
     address             = ctypes.c_char_p
-    buf                 = ctypes.c_void_p
+    buf                 = ctypes.c_char_p
     client              = ctypes.c_void_p
     key                 = ctypes.c_char_p
     keyLength           = ctypes.c_uint16
@@ -180,10 +180,10 @@ def _ctype_copy(addr, var, width):
     return addr + width
 
 def get_key(id):
+    s_id = id
     if type(id) is int:
-        return str(id)
-    else:
-        return id
+        s_id = str(id)
+    return s_id.encode()
 
 def get_keyLength(id):
     if type(id) is int:
@@ -232,7 +232,7 @@ class RAMCloud(object):
 
     def connect(self, serverLocator='fast+udp:host=127.0.0.1,port=12242',
                 clusterName='main'):
-        s = so.rc_connect(serverLocator, clusterName,
+        s = so.rc_connect(serverLocator.encode(), clusterName.encode(),
                           ctypes.byref(self.client))
         self.handle_error(s)
 
@@ -241,7 +241,7 @@ class RAMCloud(object):
         return self.write_rr(table_id, id, data, reject_rules)
 
     def create_table(self, name, serverSpan = 1):
-        s = so.rc_createTable(self.client, name, serverSpan)
+        s = so.rc_createTable(self.client, name.encode(), serverSpan)
         self.handle_error(s)
 
     def delete(self, table_id, id, want_version=None):
@@ -260,18 +260,18 @@ class RAMCloud(object):
         return got_version.value
 
     def drop_table(self, name):
-        s = so.rc_dropTable(self.client, name)
+        s = so.rc_dropTable(self.client, name.encode())
         self.handle_error(s)
 
     def get_table_id(self, name):
         handle = ctypes.c_uint64()
-        s = so.rc_getTableId(self.client, name, ctypes.byref(handle))
+        s = so.rc_getTableId(self.client, name.encode(), ctypes.byref(handle))
         self.handle_error(s)
         return handle.value
 
     def ping(self, serviceLocator, nonce, nanoseconds):
         result = ctypes.c_uint64();
-        s = so.rc_ping(self.client, serviceLocator, nonce, nanoseconds,
+        s = so.rc_ping(self.client, serviceLocator.encode(), nonce, nanoseconds,
                        ctypes.byref(result))
         self.handle_error(s)
         return result
@@ -292,10 +292,10 @@ class RAMCloud(object):
         self.hook()
         s = so.rc_read(self.client, table_id, get_key(id), get_keyLength(id),
                        ctypes.byref(reject_rules),
-                       ctypes.byref(got_version), ctypes.byref(buf), max_length,
+                       ctypes.byref(got_version), buf, max_length,
                        ctypes.byref(actual_length))
         self.handle_error(s, got_version.value)
-        return (buf.raw[0:actual_length.value], got_version.value)
+        return (buf.raw[0:actual_length.value].decode(), got_version.value)
 
     def update(self, table_id, id, data, want_version=None):
         if want_version:
@@ -316,7 +316,7 @@ class RAMCloud(object):
         got_version = ctypes.c_uint64()
         self.hook()
         s = so.rc_write(self.client, table_id, get_key(id), get_keyLength(id),
-                        data, len(data),
+                        data.encode(), len(data),
                         ctypes.byref(reject_rules), ctypes.byref(got_version))
         self.handle_error(s, got_version.value)
         return got_version.value
@@ -348,7 +348,7 @@ class RAMCloud(object):
                                               get_keyLength(id),
                                               buffer, max_len)
         self.handle_error(s)
-        return buffer.value
+        return buffer.value.decode()
 
     def testing_set_runtime_option(self, option, value):
         so.rc_set_runtime_option(self.client, option, value)
@@ -362,21 +362,21 @@ class RAMCloud(object):
 def main():
     r = RAMCloud()
     r.connect()
-    print "Client: 0x%x" % r.client.value
+    print("Client: 0x%x" % r.client.value)
     r.ping()
 
     r.create_table("test")
-    print "Created table 'test'",
+    print("Created table 'test'", end=' ')
     table = r.get_table_id("test")
-    print "with id %s" % table
+    print("with id %s" % table)
 
     r.create(table, 0, "Hello, World, from Python")
-    print "Created object 0 in table"
+    print("Created object 0 in table")
     value, got_version = r.read(table, 0)
-    print value
+    print(value)
     id = r.insert(table, "test")
-    print "Inserted value and got back id %d" % id
-    print "Value read back: %s" % r.read(table, id)[0]
+    print("Inserted value and got back id %d" % id)
+    print("Value read back: %s" % r.read(table, id)[0])
     r.update(table, id, "test")
 
     bs = "binary\00safe?"

@@ -89,7 +89,7 @@ class LazyOID:
         @rtype: int
         """
         if self._oid is None:
-            self._oid = self._oidres.next()
+            self._oid = next(self._oidres)
         return self._oid
 
 class OIDRes:
@@ -192,7 +192,7 @@ class OIDRes:
                 except (ramcloud.NoObjectError, ramcloud.VersionError):
                     retry.later()
 
-        self._reserved = range(next_avail + self.delta - 1, next_avail, -1)
+        self._reserved = list(range(next_avail + self.delta - 1, next_avail, -1))
         return next_avail
 
     def reserve_lazily(self):

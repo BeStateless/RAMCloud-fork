@@ -76,13 +76,13 @@ class Counter(object):
 
         self.count += 1
         if self.steps is not None:
-            self.tc.assert_(self.count + 1 <= self.steps,
+            self.tc.assertTrue(self.count + 1 <= self.steps,
                             "count=%d, steps=%d" % (self.count, self.steps))
         if expected is not None:
             try:
-                self.tc.assert_(self.count in expected)
+                self.tc.assertTrue(self.count in expected)
             except TypeError:
-                self.tc.assertEquals(self.count, expected)
+                self.tc.assertEqual(self.count, expected)
         return self.count
 
     def done(self):
@@ -117,7 +117,7 @@ class Counter(object):
             else:
                 # If there was already an exception, I'm betting it's more
                 # interesting.
-                print "Suppressed exception from Counter.__exit__()"
+                print("Suppressed exception from Counter.__exit__()")
 
 class MockRetry(retries.ImmediateRetry):
     """A mock implementation of a L{retries.ImmediateRetry}.
@@ -155,19 +155,19 @@ class MockRetry(retries.ImmediateRetry):
         retries.ImmediateRetry.__init__(self)
         return self
 
-    def next(self):
+    def __next__(self):
         r = retries.ImmediateRetry.next(self)
         if self.count == 1:
             raise BreakException
         return r
 
     def immediate(self):
-        self.tc.assert_(self.expect_immediate)
+        self.tc.assertTrue(self.expect_immediate)
         self.expect_immediate = False
         retries.ImmediateRetry.immediate(self)
 
     def later(self):
-        self.tc.assert_(self.expect_later)
+        self.tc.assertTrue(self.expect_later)
         self.expect_later = False
         retries.ImmediateRetry.later(self)
 
@@ -201,4 +201,4 @@ class MockRetry(retries.ImmediateRetry):
             else:
                 # If there was already an exception, I'm betting it's more
                 # interesting.
-                print "Suppressed exception from MockRetry.__exit__()"
+                print("Suppressed exception from MockRetry.__exit__()")

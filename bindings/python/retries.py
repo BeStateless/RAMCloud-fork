@@ -62,7 +62,7 @@ class ImmediateRetry(object):
         """
         return self
 
-    def next(self):
+    def __next__(self):
         """Return this object if there's another iteration scheduled.
 
         @rtype: L{ImmediateRetry}
@@ -120,14 +120,14 @@ class BackoffRetry(ImmediateRetry):
         else:
             self._sleep_func = time.sleep
 
-    def next(self):
+    def __next__(self):
         """Optionally sleep, then return this object if there's another
         iteration scheduled."""
 
         ImmediateRetry.next(self)
         if self._wait_next:
             try:
-                self._wait_time = self._wait_time_iter.next()
+                self._wait_time = next(self._wait_time_iter)
             except StopIteration:
                 pass
             self._sleep_func(self._wait_time)

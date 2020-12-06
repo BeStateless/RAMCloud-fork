@@ -92,15 +92,15 @@ class Test(object):
         try:
             while True:
                 if i % 10**6 == 0:
-                    print "PID %d: continuing after %s" % (os.getpid(),
-                          Stats.to_str(self.local_stats))
+                    print("PID %d: continuing after %s" % (os.getpid(),
+                          Stats.to_str(self.local_stats)))
 
                 accts = self.choose_accts()
 
                 for retry in RetryStrategy():
                     if die.value:
-                        print "PID %d: done after %s" % (os.getpid(),
-                              Stats.to_str(self.local_stats))
+                        print("PID %d: done after %s" % (os.getpid(),
+                              Stats.to_str(self.local_stats)))
                         return
                     try:
                         for oid in accts:
@@ -111,8 +111,8 @@ class Test(object):
                         if not self.algo(accts):
                             retry.later()
                     except BreakException:
-                        print "PID %d: crash after %s" % (os.getpid(),
-                              Stats.to_str(self.local_stats))
+                        print("PID %d: crash after %s" % (os.getpid(),
+                              Stats.to_str(self.local_stats)))
                         self.local_stats[Stats.CRASHES] += 1
                         for oid in self.cache:
                             self.cache[oid] = None
@@ -153,16 +153,16 @@ class Test(object):
             mt[(self.table, oid)] = txramcloud.MTWrite(str(value), rr)
         try:
             result = self.txrc.mt_commit(mt)
-        except txramcloud.TxRAMCloud.TransactionRejected, e:
-            for ((table, oid), reason) in e.reasons.items():
+        except txramcloud.TxRAMCloud.TransactionRejected as e:
+            for ((table, oid), reason) in list(e.reasons.items()):
                 self.cache[oid] = None
             self.local_stats[Stats.ABORTS] += 1
             return False
-        except txramcloud.TxRAMCloud.TransactionExpired, e:
+        except txramcloud.TxRAMCloud.TransactionExpired as e:
             self.local_stats[Stats.ABORTS] += 1
             return False
         else:
-            for ((table, oid), version) in result.items():
+            for ((table, oid), version) in list(result.items()):
                 self.cache[oid] = (new_values[oid], version)
             self.local_stats[Stats.INCREMENTS] += 1
             return True
@@ -197,7 +197,7 @@ if __name__ == '__main__':
     r.create_table("test")
     table = r.get_table_id("test")
 
-    oids = range(options.num_objects)
+    oids = list(range(options.num_objects))
 
     for oid in oids:
         r.create(table, oid, str(0))
@@ -224,14 +224,14 @@ if __name__ == '__main__':
             p.join()
     end = time.time()
 
-    print "wall time: %0.02fs" % (end - start)
-    print "stats:", Stats.to_str(stats[:])
+    print("wall time: %0.02fs" % (end - start))
+    print("stats:", Stats.to_str(stats[:]))
     sum = 0
     for oid in oids:
         blob, version = r.read(table, oid)
         value = int(blob)
         sum += value
-        print 'oid %d: value=%d, version=%d' % (oid, value, version)
-    print 'sum: %d' % sum
+        print('oid %d: value=%d, version=%d' % (oid, value, version))
+    print('sum: %d' % sum)
     assert sum == 0
 

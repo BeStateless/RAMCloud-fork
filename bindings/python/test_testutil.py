@@ -19,12 +19,12 @@
 See L{testutil}.
 """
 
-from __future__ import with_statement
+
 
 import unittest
-import cPickle as pickle
+import pickle as pickle
 import sys
-import StringIO
+import io
 
 from testutil import BreakException, Opaque, Counter, MockRetry
 
@@ -36,8 +36,8 @@ class TestOpaque(unittest.TestCase):
         y = Opaque()
         self.assertEqual(x, x)
         self.assertNotEqual(x, y)
-        self.assert_(x == x)
-        self.assert_(x != y)
+        self.assertTrue(x == x)
+        self.assertTrue(x != y)
 
     def test_pickle(self):
         x1 = Opaque()
@@ -101,14 +101,14 @@ class TestCounter(unittest.TestCase):
         def f():
             with Counter(self, 3) as counter:
                 raise E
-        s = StringIO.StringIO()
+        s = io.StringIO()
         saved = sys.stdout
         try:
             sys.stdout = s
             self.assertRaises(E, f)
         finally:
             sys.stdout = saved
-        self.assertEquals(s.getvalue(),
+        self.assertEqual(s.getvalue(),
                           "Suppressed exception from Counter.__exit__()\n")
 
 class TestMockRetry(unittest.TestCase):
@@ -116,32 +116,32 @@ class TestMockRetry(unittest.TestCase):
 
     def test_next(self):
         retries = MockRetry(self)
-        self.assertEquals(retries.next(), retries)
-        self.assertRaises(StopIteration, retries.next)
+        self.assertEqual(next(retries), retries)
+        self.assertRaises(StopIteration, retries.__next__)
         retries.done()
 
     def test_later(self):
         retries = MockRetry(self, expect_later=True)
-        retries.next()
+        next(retries)
         retries.later()
-        self.assertRaises(BreakException, retries.next)
+        self.assertRaises(BreakException, retries.__next__)
         retries.done()
 
     def test_later_bad(self):
         retries = MockRetry(self)
-        retries.next()
+        next(retries)
         self.assertRaises(self.failureException, retries.later)
 
     def test_immediate(self):
         retries = MockRetry(self, expect_immediate=True)
-        retries.next()
+        next(retries)
         retries.immediate()
-        self.assertRaises(BreakException, retries.next)
+        self.assertRaises(BreakException, retries.__next__)
         retries.done()
 
     def test_immediate_bad(self):
         retries = MockRetry(self)
-        retries.next()
+        next(retries)
         self.assertRaises(self.failureException, retries.immediate)
 
     def test_with(self):
@@ -161,14 +161,14 @@ class TestMockRetry(unittest.TestCase):
         def f():
             with MockRetry(self, expect_later=True) as retries:
                 raise E
-        s = StringIO.StringIO()
+        s = io.StringIO()
         saved = sys.stdout
         try:
             sys.stdout = s
             self.assertRaises(E, f)
         finally:
             sys.stdout = saved
-        self.assertEquals(s.getvalue(),
+        self.assertEqual(s.getvalue(),
                           "Suppressed exception from MockRetry.__exit__()\n")
 
 if __name__ == '__main__':

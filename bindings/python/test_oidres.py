@@ -18,7 +18,7 @@
 
 """
 
-from __future__ import with_statement
+
 
 import unittest
 
@@ -97,7 +97,7 @@ class TestOIDRes(unittest.TestCase):
                 self.assertEqual(res.next(retry_strategy), i + 70)
                 retry_strategy.done()
                 self.assertEqual(counter.count, 1)
-            self.assertEqual(res.next(), 900)
+            self.assertEqual(next(res), 900)
 
     def test_next_no_object(self):
         """Test that L{oidres.OIDRes.next} works when there is no object."""

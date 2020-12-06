@@ -86,7 +86,7 @@ Consequences
 
 import struct
 import time
-import cPickle as pickle
+import pickle as pickle
 
 import retries
 import ramcloud
@@ -574,12 +574,12 @@ class TxRAMCloud(RAMCloud):
                             given_version=user_reject_rules.given_version)
             try:
                 data, version = self.read_rr(table_id, key, rr_read)
-            except (ramcloud.ObjectExistsError, ramcloud.VersionError), e:
+            except (ramcloud.ObjectExistsError, ramcloud.VersionError) as e:
                 # The user asked for a reject
                 e.table = table_id
                 e.oid = key
                 raise
-            except ramcloud.NoObjectError, e:
+            except ramcloud.NoObjectError as e:
                 if user_reject_rules.object_doesnt_exist:
                     # The user asked for a reject
                     e.table = table_id
@@ -647,7 +647,7 @@ class TxRAMCloud(RAMCloud):
                 masked_versions[(table_id, key)] = masked_version
         except:
             # the order to _unmask_objects shouldn't matter
-            self._unmask_objects(masked_versions.keys(), txid)
+            self._unmask_objects(list(masked_versions.keys()), txid)
             raise
         return masked_versions
 
@@ -775,7 +775,7 @@ class TxRAMCloud(RAMCloud):
         @param txid: the transaction ID which masks the objects in the transaction
         @type  txid: C{int}
         """
-        for ((table_id, key), op) in mt.items():
+        for ((table_id, key), op) in list(mt.items()):
             self._apply_op(table_id, key, txid, op)
 
     def _finish_mt(self, mt, txid, version):
@@ -820,7 +820,7 @@ class TxRAMCloud(RAMCloud):
         # reserve a new transaction ID. 0 is not valid.
         txid = 0
         while txid == 0:
-            txid = self.txid_res.next()
+            txid = next(self.txid_res)
         timeout = time.time() + 30
 
         # mask objects (in sorted order to guarantee no deadlock)
@@ -828,7 +828,7 @@ class TxRAMCloud(RAMCloud):
         try:
             masked_versions = self._mask_objects(objects, mt, txid, timeout)
         except (ramcloud.NoObjectError, ramcloud.ObjectExistsError,
-                ramcloud.VersionError), e:
+                ramcloud.VersionError) as e:
             a = self.TransactionRejected()
             a.reasons[(e.table, e.oid)] = e
             raise a
@@ -852,7 +852,7 @@ class TxRAMCloud(RAMCloud):
         # Assume unmasked version is 1 greater than masked version,
         # unless the operation was a delete.
         unmasked_versions = {}
-        for ((t, o), v) in masked_versions.items():
+        for ((t, o), v) in list(masked_versions.items()):
             if type(mt[(t, o)]) == MTDelete:
                 unmasked_versions[(t, o)] = None
             else:
@@ -886,21 +886,21 @@ class MTDelete(MTOperation):
 def main():
     global r
     r = TxRAMCloud(7)
-    print "Client: 0x%x" % r.client
+    print("Client: 0x%x" % r.client)
     r.connect()
     r.ping()
 
     r.create_table("test")
-    print "Created table 'test'",
+    print("Created table 'test'", end=' ')
     table = r.get_table_id("test")
-    print "with id %s" % table
+    print("with id %s" % table)
 
     r.create(table, 0, "Hello, World, from Python")
-    print "Inserted to table"
+    print("Inserted to table")
     value, got_version = r.read(table, 0)
-    print value
+    print(value)
     key = r.insert(table, "test")
-    print "Inserted value and got back key %d" % key
+    print("Inserted value and got back key %d" % key)
     r.update(table, key, "test")
 
     bs = "binary\00safe?"

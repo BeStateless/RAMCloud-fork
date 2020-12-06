@@ -20,10 +20,10 @@
 
 """
 
-from __future__ import with_statement
+
 
 import unittest
-import cPickle as pickle
+import pickle as pickle
 import time
 
 from testutil import Counter, Opaque, BreakException, MockRetry
@@ -168,7 +168,7 @@ class TestTxRAMCloud(unittest.TestCase):
                     counter.bump()
                     self.assertEqual(table_id, Opaques.table)
                     self.assertEqual(key, Opaques.txid)
-                    self.assert_(type(txramcloud.unserialize(blob)) ==
+                    self.assertTrue(type(txramcloud.unserialize(blob)) ==
                                  txramcloud.Tombstone)
                     rr = ramcloud.RejectRules(object_exists=True)
                     self.assertEqual(reject_rules, rr)
@@ -213,9 +213,9 @@ class TestTxRAMCloud(unittest.TestCase):
                     return (txramcloud.serialize(my_mt), Opaques.version)
             def mock_finish_mt(mt, txid, version):
                 counter.bump(1)
-                self.assertEquals(mt, my_mt)
-                self.assertEquals(txid, Opaques.txid)
-                self.assertEquals(version, Opaques.version)
+                self.assertEqual(mt, my_mt)
+                self.assertEqual(txid, Opaques.txid)
+                self.assertEqual(version, Opaques.version)
             with txrc_setup(self, rc=MockRAMCloud()) as txrc:
                 txrc.tx_table = tx_table_id
                 txrc._finish_mt = mock_finish_mt
@@ -231,9 +231,9 @@ class TestTxRAMCloud(unittest.TestCase):
                     return (st, Opaques.version)
             def mock_unmask_object(table_id, key, txid):
                 counter.bump(1)
-                self.assertEquals(table_id, Opaques.table)
-                self.assertEquals(key, Opaques.oid)
-                self.assertEquals(txid, Opaques.txid)
+                self.assertEqual(table_id, Opaques.table)
+                self.assertEqual(key, Opaques.oid)
+                self.assertEqual(txid, Opaques.txid)
             with txrc_setup(self, rc=MockRAMCloud()) as txrc:
                 txrc._unmask_object = mock_unmask_object
                 txrc._clean(Opaques.table, Opaques.oid, Opaques.txid,
@@ -247,13 +247,13 @@ class TestTxRAMCloud(unittest.TestCase):
                     raise ramcloud.NoObjectError
             def mock_write_tombstone(txid):
                 counter.bump(1)
-                self.assertEquals(txid, Opaques.txid)
+                self.assertEqual(txid, Opaques.txid)
                 return Opaques.version
             def mock_unmask_object(table_id, key, txid):
                 counter.bump(2)
-                self.assertEquals(table_id, Opaques.table)
-                self.assertEquals(key, Opaques.oid)
-                self.assertEquals(txid, Opaques.txid)
+                self.assertEqual(table_id, Opaques.table)
+                self.assertEqual(key, Opaques.oid)
+                self.assertEqual(txid, Opaques.txid)
             with txrc_setup(self, rc=MockRAMCloud()) as txrc:
                 txrc._write_tombstone = mock_write_tombstone
                 txrc._unmask_object = mock_unmask_object
@@ -313,10 +313,10 @@ class TestTxRAMCloud(unittest.TestCase):
                     return (blob, Opaques.version)
             def mock_clean(table_id, key, txid, timeout):
                 counter.bump(1)
-                self.assertEquals(table_id, Opaques.table)
-                self.assertEquals(key, Opaques.oid)
-                self.assertEquals(txid, 1)
-                self.assertEquals(timeout, my_timeout)
+                self.assertEqual(table_id, Opaques.table)
+                self.assertEqual(key, Opaques.oid)
+                self.assertEqual(txid, 1)
+                self.assertEqual(timeout, my_timeout)
             retries = MockRetry(self, expect_later=True)
             with txrc_setup(self, rc=MockRAMCloud(), retries=retries) as txrc:
                 txrc._clean = mock_clean
@@ -805,16 +805,16 @@ class TestCoordinator(unittest.TestCase):
                 txrc.read_rr = mock_read_rr
                 r = txrc._mask_object(Opaques.table, Opaques.oid, 30, now + 10,
                                       ramcloud.RejectRules())
-                self.assertEquals(r, Opaques.version)
+                self.assertEqual(r, Opaques.version)
 
     def test_mask_object_object_version(self):
         txrc = TxRAMCloud(0)
         def mock_read_rr(table_id, key, reject_rules):
-            self.assert_(reject_rules.object_doesnt_exist)
-            self.assert_(reject_rules.object_exists)
-            self.assert_(reject_rules.version_eq_given)
-            self.assert_(reject_rules.version_gt_given)
-            self.assertEquals(reject_rules.given_version, 999)
+            self.assertTrue(reject_rules.object_doesnt_exist)
+            self.assertTrue(reject_rules.object_exists)
+            self.assertTrue(reject_rules.version_eq_given)
+            self.assertTrue(reject_rules.version_gt_given)
+            self.assertEqual(reject_rules.given_version, 999)
             raise ramcloud.VersionError(999, 1023)
         txrc.read_rr = mock_read_rr
         rr = ramcloud.RejectRules(object_doesnt_exist=False,
@@ -823,9 +823,9 @@ class TestCoordinator(unittest.TestCase):
         try:
             txrc._mask_object(Opaques.table, Opaques.oid, Opaques.txid,
                               Opaques.timeout, rr)
-        except ramcloud.VersionError, e:
-            self.assertEquals(e.table, Opaques.table)
-            self.assertEquals(e.oid, Opaques.oid)
+        except ramcloud.VersionError as e:
+            self.assertEqual(e.table, Opaques.table)
+            self.assertEqual(e.oid, Opaques.oid)
         else:
             self.fail()
 
@@ -838,9 +838,9 @@ class TestCoordinator(unittest.TestCase):
             try:
                 txrc._mask_object(Opaques.table, Opaques.oid, Opaques.txid,
                                   Opaques.timeout, rr)
-            except ramcloud.NoObjectError, e:
-                self.assertEquals(e.table, Opaques.table)
-                self.assertEquals(e.oid, Opaques.oid)
+            except ramcloud.NoObjectError as e:
+                self.assertEqual(e.table, Opaques.table)
+                self.assertEqual(e.oid, Opaques.oid)
             else:
                 self.fail()
 
@@ -863,7 +863,7 @@ class TestCoordinator(unittest.TestCase):
                 txrc.read_rr = mock_read_rr
                 r = txrc._mask_object(Opaques.table, Opaques.oid, 30, now + 10,
                                       ramcloud.RejectRules())
-                self.assertEquals(r, Opaques.version)
+                self.assertEqual(r, Opaques.version)
 
     def test_mask_object_unmasked_write_error(self):
         with Counter(self, 2) as counter:
@@ -896,7 +896,7 @@ class TestCoordinator(unittest.TestCase):
         mt = txramcloud.MiniTransaction()
         txid = Opaques.txid
         timeout = Opaques.timeout
-        expected = zip(range(100, 130), range(200, 230), range(300, 330))
+        expected = list(zip(list(range(100, 130)), list(range(200, 230)), list(range(300, 330))))
         for (table, oid, version) in expected:
             rr = ramcloud.RejectRules.exactly(version)
             mt[(table, oid)] = txramcloud.MTOperation(rr)
@@ -908,28 +908,28 @@ class TestCoordinator(unittest.TestCase):
         with Counter(self, 30) as counter:
             def mock_mask_object(table_id, key, txid, timeout, reject_rules):
                 counter.bump()
-                self.assertEquals(txid, Opaques.txid)
-                self.assertEquals(timeout, Opaques.timeout)
-                self.assertEquals(expected[counter.count],
+                self.assertEqual(txid, Opaques.txid)
+                self.assertEqual(timeout, Opaques.timeout)
+                self.assertEqual(expected[counter.count],
                                   (table_id, key, reject_rules.given_version))
                 return expected[counter.count][2] + 1
             txrc._mask_object = mock_mask_object
             r = txrc._mask_objects([(t,o) for (t,o,v) in expected],
                                    mt, txid, timeout)
             for (t, o, v) in expected:
-                self.assertEquals(r[(t, o)], v + 1)
+                self.assertEqual(r[(t, o)], v + 1)
 
     def test_mask_objects_err(self):
         mt, txid, timeout, expected, txrc = self.setup_test_mask_objects()
         with Counter(self, 12) as counter:
             def mock_mask_object(table_id, key, txid, timeout, reject_rules):
-                if counter.bump(range(11)) == 10:
+                if counter.bump(list(range(11))) == 10:
                     raise BreakException
             def mock_unmask_objects(objects, txid):
                 counter.bump(11)
-                self.assertEquals(set(objects),
+                self.assertEqual(set(objects),
                                   set([(t,o) for (t,o,v) in expected[:10]]))
-                self.assertEquals(txid, Opaques.txid)
+                self.assertEqual(txid, Opaques.txid)
             txrc._mask_object = mock_mask_object
             txrc._unmask_objects = mock_unmask_objects
             self.assertRaises(BreakException, txrc._mask_objects,
@@ -1128,22 +1128,22 @@ class TestCoordinator(unittest.TestCase):
             def mock_apply_op(table_id, key, txid, op):
                 counter.bump()
                 observed.add((table_id, key, op))
-                self.assertEquals(txid, Opaques.txid)
+                self.assertEqual(txid, Opaques.txid)
             with txrc_setup(self) as txrc:
                 txrc._apply_op = mock_apply_op
                 txrc._apply_mt(mt, Opaques.txid)
-                self.assertEquals(observed, expected)
+                self.assertEqual(observed, expected)
 
     def test_finish_mt(self):
         with Counter(self, 2) as counter:
             def mock_apply_mt(mt, txid):
                 counter.bump(0)
-                self.assertEquals(mt, Opaques.mt)
-                self.assertEquals(txid, Opaques.txid)
+                self.assertEqual(mt, Opaques.mt)
+                self.assertEqual(txid, Opaques.txid)
             def mock_delete_mt(txid, version):
                 counter.bump(1)
-                self.assertEquals(txid, Opaques.txid)
-                self.assertEquals(version, Opaques.version)
+                self.assertEqual(txid, Opaques.txid)
+                self.assertEqual(version, Opaques.version)
             with txrc_setup(self) as txrc:
                 txrc._apply_mt = mock_apply_mt
                 txrc._delete_mt = mock_delete_mt
@@ -1172,28 +1172,28 @@ class TestCoordinator(unittest.TestCase):
         with Counter(self, 3) as counter:
             def mock_mask_objects(objects, _mt, txid, timeout):
                 counter.bump(0)
-                self.assertEquals(objects, [(38, 2), (38, 3), (73, 4)])
-                self.assertEquals(_mt, mt)
-                self.assertEquals(txid, 48484)
-                self.assert_(timeout > time.time() + 5)
-                self.assert_(timeout < time.time() + 60)
+                self.assertEqual(objects, [(38, 2), (38, 3), (73, 4)])
+                self.assertEqual(_mt, mt)
+                self.assertEqual(txid, 48484)
+                self.assertTrue(timeout > time.time() + 5)
+                self.assertTrue(timeout < time.time() + 60)
                 return {(38, 2): 11, (38, 3): 21, (73, 4): 31}
             def mock_write_mt(_mt, txid):
                 counter.bump(1)
-                self.assertEquals(_mt, mt)
-                self.assertEquals(txid, 48484)
+                self.assertEqual(_mt, mt)
+                self.assertEqual(txid, 48484)
                 return Opaques.version
             def mock_finish_mt(_mt, txid, version):
                 counter.bump(2)
-                self.assertEquals(_mt, mt)
-                self.assertEquals(txid, 48484)
-                self.assertEquals(version, Opaques.version)
+                self.assertEqual(_mt, mt)
+                self.assertEqual(txid, 48484)
+                self.assertEqual(version, Opaques.version)
             with txrc_setup(self) as txrc:
                 txrc.txid_res = iter([48484])
                 txrc._mask_objects = mock_mask_objects
                 txrc._write_mt = mock_write_mt
                 txrc._finish_mt = mock_finish_mt
-                self.assertEquals(txrc.mt_commit(mt),
+                self.assertEqual(txrc.mt_commit(mt),
                                   {(38, 2): 12, (38, 3): 22, (73, 4): None})
 
     def test_mt_commit_mask_fail(self):
@@ -1210,8 +1210,8 @@ class TestCoordinator(unittest.TestCase):
                 txrc._mask_objects = mock_mask_objects
                 try:
                     txrc.mt_commit(mt)
-                except txrc.TransactionRejected, e:
-                    self.assertEquals(e.reasons, {(73, 4): em})
+                except txrc.TransactionRejected as e:
+                    self.assertEqual(e.reasons, {(73, 4): em})
                 else:
                     self.fail()
 
@@ -1226,11 +1226,11 @@ class TestCoordinator(unittest.TestCase):
                 raise BreakException
             def mock_unmask_objects(objects, txid):
                 counter.bump(2)
-                self.assertEquals(set(objects), set(mt.keys()))
-                self.assertEquals(txid, 48484)
+                self.assertEqual(set(objects), set(mt.keys()))
+                self.assertEqual(txid, 48484)
             def mock_delete_tombstone(txid):
                 counter.bump(3)
-                self.assertEquals(txid, 48484)
+                self.assertEqual(txid, 48484)
             with txrc_setup(self) as txrc:
                 txrc.txid_res = iter([48484])
                 txrc._mask_objects = mock_mask_objects
@@ -1242,9 +1242,9 @@ class TestCoordinator(unittest.TestCase):
 class TestMiniTransaction(unittest.TestCase):
     def assertSerializable(self, mt):
         mt_out = txramcloud.unserialize(txramcloud.serialize(mt))
-        self.assertEquals(set(mt_out.keys()), set(mt.keys()))
+        self.assertEqual(set(mt_out.keys()), set(mt.keys()))
         for key in mt_out:
-            self.assertEquals(type(mt_out[key]), type(mt[key]))
+            self.assertEqual(type(mt_out[key]), type(mt[key]))
             # TODO: we'd like to test operation equality, not type equality
 
     def test_mt_serializable(self):
