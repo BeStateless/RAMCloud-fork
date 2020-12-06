@@ -162,8 +162,8 @@ TEST_F(LogTest, destructor) {
     Tub<Log> l2;
     l2.construct(&context, &serverConfig, &entryHandlers,
            &segmentManager2, &replicaManager);
-    l2->enableCleaner();
     TestLog::Enable _;
+    l2->enableCleaner();
     l2.destroy();
     EXPECT_EQ("cleanerThreadEntry: LogCleaner thread started | "
               "cleanerThreadEntry: LogCleaner thread stopping | "

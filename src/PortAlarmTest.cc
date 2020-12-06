@@ -33,6 +33,7 @@ class PortAlarmTest : public ::testing::Test {
     ~PortAlarmTest()
     {
         Cycles::mockTscValue = 0;
+        //timer.setPortTimeout(-1);
     }
 
   private:
@@ -286,8 +287,8 @@ TEST_F(PortAlarmTest, restart_portTimer) {
         context.dispatch->poll();
     }
 
-    EXPECT_TRUE(port1); // watchdog timeout should not occur
-    EXPECT_TRUE(port2); // watchdog timeout should not occur
+    ASSERT_TRUE(port1); // watchdog timeout should not occur
+    ASSERT_TRUE(port2); // watchdog timeout should not occur
     // waitingForRequestsMs is incremented every 5ms
     EXPECT_EQ(port1->alarm.idleMs, 10);
     EXPECT_EQ(port2->alarm.idleMs, 10);
