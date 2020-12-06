@@ -21,6 +21,7 @@
 #ifndef RAMCLOUD_CRAMCLOUD_H
 #define RAMCLOUD_CRAMCLOUD_H
 
+#include <stddef.h>
 #include <inttypes.h>
 
 #include "RejectRules.h"
@@ -117,6 +118,8 @@ void      rc_multiRemoveCreate(uint64_t tableId,
 uint16_t  rc_multiOpSizeOf(MultiOp type);
 Status    rc_multiOpStatus(const void *multiOpObject, MultiOp type);
 uint64_t  rc_multiOpVersion(const void *multiOpObject, MultiOp type);
+double    rc_multiIncrementDoubleResult(const void * const multiIncrementObject);
+int64_t   rc_multiIncrementInt64Result(const void * const multiIncrementObject);
 void      rc_multiOpDestroy(void *multiOpObject, MultiOp type);
 
 void      rc_multiIncrement(struct rc_client* client,
@@ -148,7 +151,6 @@ Status    rc_set_runtime_option(struct rc_client* client,
                                                   const char* option,
                                                   const char* value);
 void rc_testing_wait_for_all_tablets_normal(struct rc_client* client,
-                                            uint64_t tableId,
                                             uint64_t timeoutNs);
 void rc_set_log_file(const char* path);
 

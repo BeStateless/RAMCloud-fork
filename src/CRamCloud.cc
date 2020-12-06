@@ -757,6 +757,20 @@ rc_multiIncrement(struct rc_client* client,
     }
 }
 
+double
+rc_multiIncrementDoubleResult(void const * const multiIncrementObject) {
+    const MultiIncrementObject * const multiIncrementObjectCast =
+            reinterpret_cast<MultiIncrementObject const * const>(multiIncrementObject);
+    return multiIncrementObjectCast->newValue.asDouble;
+}
+
+int64_t
+rc_multiIncrementInt64Result(void const * const multiIncrementObject) {
+    MultiIncrementObject const * const multiIncrementObjectCast =
+            reinterpret_cast<MultiIncrementObject const * const>(multiIncrementObject);
+    return multiIncrementObjectCast->newValue.asInt64;
+}
+
 /**
  * Issues a read on multiple objects.
  *
@@ -941,10 +955,9 @@ rc_set_runtime_option(struct rc_client* client,
 
 void
 rc_testing_wait_for_all_tablets_normal(struct rc_client* client,
-                                       uint64_t tableId,
                                        uint64_t timeoutNs)
 {
-    client->client->testingWaitForAllTabletsNormal(tableId, timeoutNs);
+    client->client->testingWaitForAllTabletsNormal(timeoutNs);
 }
 
 void
@@ -952,4 +965,3 @@ rc_set_log_file(const char* path)
 {
     Logger::get().setLogFile(path);
 }
-
