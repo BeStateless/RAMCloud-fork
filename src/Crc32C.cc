@@ -30,10 +30,6 @@ haveSse42() {
     uint32_t a, b, c, d;
     CPUID(1, a, b, c, d);
     bool ret = ((c & (1 << 20)) != 0);
-    if (ret)
-        LOG(DEBUG, "Processor has SSE 4.2");
-    else
-        LOG(DEBUG, "Processor does not have SSE 4.2");
     return ret;
 }
 } // anonymous namespace
