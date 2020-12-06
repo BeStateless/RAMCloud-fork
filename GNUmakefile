@@ -451,6 +451,11 @@ INSTALL_INCLUDES := \
     src/LogMetadata.h \
     src/MasterClient.h \
     src/Minimal.h \
+    src/MultiIncrement.h \
+    src/MultiOp.h \
+    src/MultiRead.h \
+    src/MultiRemove.h \
+    src/MultiWrite.h \
     src/Object.h \
     src/ObjectBuffer.h \
     src/ObjectRpcWrapper.h \
