@@ -183,7 +183,7 @@ RpcWrapper::isReady() {
                     || (responseHeader->status == STATUS_OK)) {
                 LOG(ERROR, "Response from %s for %s RPC is too short "
                         "(needed at least %d bytes, got %d)",
-                        session->serviceLocator.c_str(),
+                        session ? session->serviceLocator.c_str() : "(no session)",
                         WireFormat::opcodeSymbol(&request),
                         responseHeaderLength,
                         downCast<int>(response->size()));
@@ -192,6 +192,12 @@ RpcWrapper::isReady() {
             // Extend the response buffer to be at least responseHeaderLength
             // bytes long.
             if (response->size() < responseHeaderLength) {
+                LOG(NOTICE, "Response from %s for %s RPC is too short "
+                        "(needed at least %d bytes, got %d) - Extending to required size.",
+                        session ? session->serviceLocator.c_str() : "(no session)",
+                        WireFormat::opcodeSymbol(&request),
+                        responseHeaderLength,
+                        downCast<int>(response->size()));
                 response->alloc(responseHeaderLength - response->size());
             }
         }
@@ -217,13 +223,13 @@ RpcWrapper::isReady() {
                 }
                 RAMCLOUD_CLOG(NOTICE,
                         "Server %s returned STATUS_RETRY from %s request: %s",
-                        session->serviceLocator.c_str(),
+                        session ? session->serviceLocator.c_str() : "(no session)",
                         WireFormat::opcodeSymbol(&request),
                         message);
             } else {
                 RAMCLOUD_CLOG(NOTICE,
                         "Server %s returned STATUS_RETRY from %s request",
-                        session->serviceLocator.c_str(),
+                        session ? session->serviceLocator.c_str() : "(no session)",
                         WireFormat::opcodeSymbol(&request));
             }
             retry(retryResponse->minDelayMicros,
